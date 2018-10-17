@@ -1,6 +1,12 @@
 const fs = require('fs');
 const readline = require('readline');
 
+setUpLineReader = fileName => {
+    return readline.createInterface({
+        input: fs.createReadStream(fileName)
+    })
+}
+
 done = (output) => {
     process.stdout.write(output);
     process.stdout.write('\nprompt > ');
@@ -19,8 +25,13 @@ evaluateCmd = (userInput) => {
             break;
         case "wc": 
             commandLibrary.wc(userInputArray.slice(1));
+            break;
         case "sort":
             commandLibrary.sort(userInputArray.slice(1));
+            break;
+        case "uniq":
+            commandLibrary.uniq(userInputArray.slice(1));
+            break;
     }
 }
 
@@ -47,10 +58,7 @@ const commandLibrary = {
                     wordCount++;
                 }
             }
-            const lineReader = readline.createInterface({
-                input: fs.createReadStream(fileName),
-                crlfDelay: Infinity
-            });
+            const lineReader = setUpLineReader(fileName);
             let count = 0;
             lineReader.on('line', (line) => {
                 count++;
@@ -64,10 +72,7 @@ const commandLibrary = {
     sort: (fullPath) => {
         const fileName = fullPath[0];
 
-        const lineReader = readline.createInterface({
-            input: fs.createReadStream(fileName),
-            crlfDelay: Infinity
-        });
+        const lineReader = setUpLineReader(fileName);
         let lines = [];
         lineReader.on('line', (line) => {
             lines.push(line);
@@ -83,6 +88,22 @@ const commandLibrary = {
             });
             done(sortedLines.join('\n'));
         });        
+    },
+    uniq: (fullPath) => {
+        const fileName = fullPath[0];
+        const lineReader = setUpLineReader(fileName);
+        let lines = [];
+        lineReader.on('line', line => {
+            lines.push(line);
+        }).on('close', () => {
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i] === lines[i+1]) {
+                    lines.splice(i, 1);
+                    i--;
+                }
+            }
+            done(lines.join('\n'));;
+        });
     }
 };
 
