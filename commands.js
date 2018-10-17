@@ -63,6 +63,26 @@ const commandLibrary = {
     },
     sort: (fullPath) => {
         const fileName = fullPath[0];
+
+        const lineReader = readline.createInterface({
+            input: fs.createReadStream(fileName),
+            crlfDelay: Infinity
+        });
+        let lines = [];
+        lineReader.on('line', (line) => {
+            lines.push(line);
+        }).on('close', () => {
+            let sortedLines = lines.sort((a, b) => {
+                if (a < b) {
+                    return -1;
+                } else if (a > b) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            });
+            done(sortedLines.join('\n'));
+        });        
     }
 };
 
