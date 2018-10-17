@@ -17,28 +17,31 @@ evaluateCmd = (userInput) => {
     const command = userInputArray[0];
 
     switch (command) {
-        case "echo":
-            commandLibrary.echo(userInputArray.slice(1).join(" "));
-            break;
         case "cat":
             commandLibrary.cat(userInputArray.slice(1));
             break;
-        case "wc": 
-            commandLibrary.wc(userInputArray.slice(1));
+        case "echo":
+            commandLibrary.echo(userInputArray.slice(1).join(" "));
+            break;
+        case "head":
+            commandLibrary.head(userInputArray.slice(1));
             break;
         case "sort":
             commandLibrary.sort(userInputArray.slice(1));
             break;
+        case "tail":
+            commandLibrary.tail(userInputArray.slice(1));
+            break;
         case "uniq":
             commandLibrary.uniq(userInputArray.slice(1));
+            break;
+        case "wc": 
+            commandLibrary.wc(userInputArray.slice(1));
             break;
     }
 }
 
 const commandLibrary = {
-    echo: (userInput) => {
-        done(userInput);
-    },
     cat: (fullPath) => {
         const fileName = fullPath[0];
         fs.readFile(fileName, 'utf8', (err, data) => {
@@ -46,6 +49,77 @@ const commandLibrary = {
             done(data);
         });
     },
+    echo: (userInput) => {
+        done(userInput);
+    },
+    head: (fullPath) => {
+        const fileName = fullPath[0];
+
+        try {
+            const lineReader = setUpLineReader(fileName);
+            let lines = [];
+            lineReader.on('line', line => {
+                if (lines.length < 3) { // Lines set to 3...
+                    lines.push(line);
+                } else {
+                    lineReader.close();
+                }                
+            }).on('close', () => {
+                done(lines.join('\n'));
+            });
+        } catch (err) {
+            console.log(err);
+        }
+        
+    },   
+    sort: (fullPath) => {
+        const fileName = fullPath[0];
+
+        const lineReader = setUpLineReader(fileName);
+        let lines = [];
+        lineReader.on('line', (line) => {
+            lines.push(line);
+        }).on('close', () => {
+            let sortedLines = lines.sort((a, b) => {
+                if (a < b) {
+                    return -1;
+                } else if (a > b) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            });
+            done(sortedLines.join('\n'));
+        });        
+    },
+    tail: (fullPath) => {
+        const fileName = fullPath[0];
+
+        const lineReader = setUpLineReader(fileName);
+        const lines = [];
+        lineReader.on('line', line => {
+            lines.push(line);
+        }).on('close', () => {
+            let lastLines = lines.slice(lines.length-3); // Using last 3 lines
+            done(lastLines.join('\n'));
+        })
+    },
+    uniq: (fullPath) => {
+        const fileName = fullPath[0];
+        const lineReader = setUpLineReader(fileName);
+        let lines = [];
+        lineReader.on('line', line => {
+            lines.push(line);
+        }).on('close', () => {
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i] === lines[i+1]) {
+                    lines.splice(i, 1);
+                    i--;
+                }
+            }
+            done(lines.join('\n'));;
+        });
+    }, 
     wc: (fullPath) => {
         const fileName = fullPath[0];
         const fileSize = fs.statSync(fileName).size;
@@ -69,42 +143,6 @@ const commandLibrary = {
             console.error(err);
         }        
     },
-    sort: (fullPath) => {
-        const fileName = fullPath[0];
-
-        const lineReader = setUpLineReader(fileName);
-        let lines = [];
-        lineReader.on('line', (line) => {
-            lines.push(line);
-        }).on('close', () => {
-            let sortedLines = lines.sort((a, b) => {
-                if (a < b) {
-                    return -1;
-                } else if (a > b) {
-                    return 1;
-                } else {
-                    return 0;
-                }
-            });
-            done(sortedLines.join('\n'));
-        });        
-    },
-    uniq: (fullPath) => {
-        const fileName = fullPath[0];
-        const lineReader = setUpLineReader(fileName);
-        let lines = [];
-        lineReader.on('line', line => {
-            lines.push(line);
-        }).on('close', () => {
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i] === lines[i+1]) {
-                    lines.splice(i, 1);
-                    i--;
-                }
-            }
-            done(lines.join('\n'));;
-        });
-    }
 };
 
 module.exports.commandLibrary = commandLibrary;
